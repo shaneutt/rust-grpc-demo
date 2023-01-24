@@ -1,0 +1,62 @@
+syntax = "proto3";
+package store;
+
+service Inventory {
+    // Add inserts a new Item into the inventory.
+    rpc Add(Item) returns (InventoryChangeResponse);
+
+    // Remove removes Items from the inventory.
+    rpc Remove(ItemIdentifier) returns (InventoryChangeResponse);
+
+    // Get retrieves Item information.
+    rpc Get(ItemIdentifier) returns (Item);
+
+    // UpdateQuantity increases or decreases the stock quantity of an Item.
+    rpc UpdateQuantity(QuantityChangeRequest) returns (InventoryUpdateResponse);
+
+    // UpdatePrice increases or decreases the price of an Item.
+    rpc UpdatePrice(PriceChangeRequest) returns (InventoryUpdateResponse);
+
+    // Watch streams Item updates from the inventory.
+    rpc Watch(ItemIdentifier) returns (stream Item);
+}
+
+message ItemIdentifier {
+    string sku = 2;
+}
+
+message ItemStock {
+    float  price    = 1;
+    uint32 quantity = 2;
+}
+
+message ItemInformation {
+    optional string name        = 1;
+    optional string description = 2;
+}
+
+message Item {
+    ItemIdentifier           identifier  = 1;
+    ItemStock                stock       = 2;
+    optional ItemInformation information = 3;
+}
+
+message QuantityChangeRequest {
+    string sku    = 1;
+    int32  change = 2;
+}
+
+message PriceChangeRequest {
+    string sku   = 1;
+    float  price = 2;
+}
+
+message InventoryChangeResponse {
+    string status = 1;
+}
+
+message InventoryUpdateResponse {
+    string status   = 1;
+    float price     = 2;
+    uint32 quantity = 3;
+}
