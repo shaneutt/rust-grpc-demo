@@ -702,7 +702,7 @@ client to view and manage our inventory. For this we will make a command-line
 tool which can be used to manage the inventory using the gRPC API.
 
 We'll use [Clap][rust-clap], which is a popular command-line toolkit for Rust
-and create our CLI in `src/cli.rs`, starting with the imports we'll need:
+and create our CLI. Create the file `src/cli.rs` and add the required imports:
 
 ```rust
 pub mod store;
@@ -1031,7 +1031,7 @@ Then back in our previous terminal, make several changes and even remove
 the item entirely:
 
 ```console
-$ ./cli update-quantity --sku TESTSKU --change 50
+$ ./cli update-quantity --sku TESTSKU --change +50
 success: quantity was updated. Quantity: 53 Price: 2.19
 $ ./cli update-price --sku TESTSKU --price 1.99
 success: price was updated. Quantity: 53 Price: 1.99
