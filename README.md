@@ -21,7 +21,7 @@ RPC APIs can be a great alternative to "REST-like" APIs and operate as a set of
 [functions/subroutines][subs] which can be called over a network. RPC APIs are
 often more lightweight and performant than HTTP APIs, but can also be a little
 more burdensome to set up initially. The [gRPC][grpc] project was introduced to
-improve the set up and tooling experience for creating and maintaining RPC APIs,
+improve the set-up and tooling experience for creating and maintaining RPC APIs,
 providing a "batteries included" experience.
 
 [gRPC][grpc] is a modern, [open source][oss] high performance RPC framework
