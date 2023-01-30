@@ -47,7 +47,7 @@ struct AddOptions {
 }
 
 async fn add(opts: AddOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let id = ItemIdentifier { sku: opts.sku };
 
