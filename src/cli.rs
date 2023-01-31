@@ -86,7 +86,7 @@ struct RemoveOptions {
 }
 
 async fn remove(opts: RemoveOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(ItemIdentifier { sku: opts.sku });
     let response = client.remove(request).await?;
@@ -108,7 +108,7 @@ struct GetOptions {
 }
 
 async fn get(opts: GetOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(ItemIdentifier { sku: opts.sku });
     let item = client.get(request).await?.into_inner();
@@ -130,7 +130,7 @@ struct UpdateQuantityOptions {
 }
 
 async fn update_quantity(opts: UpdateQuantityOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(QuantityChangeRequest {
         sku: opts.sku,
@@ -160,7 +160,7 @@ struct UpdatePriceOptions {
 }
 
 async fn update_price(opts: UpdatePriceOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(PriceChangeRequest {
         sku: opts.sku,
@@ -182,7 +182,7 @@ async fn update_price(opts: UpdatePriceOptions) -> Result<(), Box<dyn std::error
 // -----------------------------------------------------------------------------
 
 async fn watch(opts: GetOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let mut stream = client
         .watch(ItemIdentifier {

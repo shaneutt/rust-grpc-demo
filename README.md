@@ -208,7 +208,7 @@ generate some of our server and our client code.
 
 [protoc]:https://wikipedia.org/wiki/Protocol_Buffers
 
-# Step 3: Compiling Protobuf
+## Step 3: Compiling Protobuf
 
 Now that we have our service, calls and messages all defined we should be able
 to compile that into a Rust API server and client.
@@ -238,6 +238,7 @@ tokio = { version = "1.24", features = ["macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 futures = "0.3"
 clap = { version = "4.1.4", features = ["derive"] }
+tonic-reflection = "0.6.0"
 
 [build-dependencies]
 tonic-build = "0.8"
@@ -253,22 +254,27 @@ hook the `cargo build` step to compile our `.proto` file during every build.
 We can do that by creating `build.rs`:
 
 ```rust
+use std::env;
+use std::path::PathBuf;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let proto_file = "./proto/store.proto";
+   let proto_file = "./proto/store.proto";
+   let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    tonic_build::configure()
-        .protoc_arg("--experimental_allow_proto3_optional") // for older systems
-        .build_client(true)
-        .build_server(true)
-        .out_dir("./src")
-        .compile(&[proto_file], &["."])?;
+   tonic_build::configure()
+           .protoc_arg("--experimental_allow_proto3_optional") // for older systems
+           .build_client(true)
+           .build_server(true)
+           .file_descriptor_set_path(out_dir.join("store_descriptor.bin"))
+           .out_dir("./src")
+           .compile(&[proto_file], &["proto"])?;
 
-    Ok(())
+   Ok(())
 }
 ```
 
 > **Note**: the `--experimental_allow_proto3_optional` argument isn't strictly
-> necessary on newer systems with `protoc` version `3.21.x`+, but it wont hurt
+> necessary on newer systems with `protoc` version `3.21.x`+, but it won't hurt
 > anything either. This is particularly helpful for users of Ubuntu LTS or other
 > systems where the packaged `protoc` is significantly older.
 
@@ -662,34 +668,53 @@ everything works, but these are the high level steps:
    type we defined in the previous step
 
 With that we can `add`, `remove`, `get`, `update` and `watch` items in our
-inventory! We need a mechansim to _start_ this server we just created, so let's
+inventory! We need a mechanism to _start_ this server we just created, so let's
 add that to our `src/main.rs`, making the file look like this:
 
 ```rust
+use tonic::transport::Server;
+
 use server::StoreInventory;
 use store::inventory_server::InventoryServer;
-use tonic::transport::Server;
 
 pub mod server;
 pub mod store;
 
+mod store_proto {
+   include!("store.rs");
+
+   pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
+      tonic::include_file_descriptor_set!("store_descriptor");
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "127.0.0.1:8080".parse()?;
-    let inventory = StoreInventory::default();
+   let addr = "127.0.0.1:9001".parse()?;
+   let inventory = StoreInventory::default();
 
-    Server::builder()
-        .add_service(InventoryServer::new(inventory))
-        .serve(addr)
-        .await?;
+   let reflection_service = tonic_reflection::server::Builder::configure()
+           .register_encoded_file_descriptor_set(store_proto::FILE_DESCRIPTOR_SET)
+           .build()
+           .unwrap();
 
-    Ok(())
+   Server::builder()
+           .add_service(InventoryServer::new(inventory))
+           .add_service(reflection_service)
+           .serve(addr)
+           .await?;
+   Ok(())
 }
 ```
+
+> **Note**: You can notice that we are registering `InventoryService` and `reflection_service`.
+> Reflection service is an implementation of [Server Reflection][grpc-reflect] specification that allows gRPC clients discover services available on gRPC clients.
+> Next, we demonstrate how [Insomnia][insomnia] gRPC client can learn about what methods are available in `InventoryService`.
 
 In the next steps we'll move on to client code so that we can see our server
 in action.
 
+[insomnia]: https://insomnia.rest
+[grpc-reflect]: https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
 [rust-async]:https://rust-lang.github.io/async-book/
 [tokio]:https://tokio.rs
 [tokio-tut]:https://tokio.rs/tokio/tutorial
@@ -759,7 +784,7 @@ struct AddOptions {
 }
 
 async fn add(opts: AddOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let id = ItemIdentifier { sku: opts.sku };
 
@@ -804,7 +829,7 @@ struct RemoveOptions {
 }
 
 async fn remove(opts: RemoveOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(ItemIdentifier { sku: opts.sku });
     let response = client.remove(request).await?;
@@ -826,7 +851,7 @@ struct GetOptions {
 }
 
 async fn get(opts: GetOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(ItemIdentifier { sku: opts.sku });
     let item = client.get(request).await?.into_inner();
@@ -849,7 +874,7 @@ struct UpdateQuantityOptions {
 }
 
 async fn update_quantity(opts: UpdateQuantityOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(QuantityChangeRequest {
         sku: opts.sku,
@@ -877,7 +902,7 @@ struct UpdatePriceOptions {
 }
 
 async fn update_price(opts: UpdatePriceOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let request = tonic::Request::new(PriceChangeRequest {
         sku: opts.sku,
@@ -901,7 +926,7 @@ from the `watch` request on the server, and iterate through it with `.next()`:
 
 ```rust
 async fn watch(opts: GetOptions) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = InventoryClient::connect("http://127.0.0.1:8080").await?;
+    let mut client = InventoryClient::connect("http://127.0.0.1:9001").await?;
 
     let mut stream = client
         .watch(ItemIdentifier {
@@ -961,7 +986,7 @@ Now we're ready to test everything out!
 
 ## Step 6: Trying It Out
 
-Everything's in place and now it's time to see our work in action!
+Everything's in place, and now it's time to see our work in action!
 
 We're going to run our server in the background, and then try a variety of
 cli commands against it.
@@ -973,6 +998,40 @@ and run:
 $ cargo run --release --bin server
 ```
 
+At first, we are going to test our server using [Insomnia][insomnia].
+Insomnia is a free API testing tool, and it supports testing gRPC services.
+After you downloaded and installed Insomnia, open it and click ⨁ icon and select «gRPC Request».
+
+![grpc_request.png](images%2Fgrpc_request.png)
+
+Enter `localhost:9001` in gRPC server bar. 
+In gRPC method dropdown, select _Click to use server reflection_.
+
+![server_reflection.png](images%2Fserver_reflection.png)
+
+Select Unary method `/Inventory/Add` and add body of json request. 
+
+```json
+{
+   "identifier": {
+      "sku": "TESTSKU"
+   },
+   "stock": {
+      "price": 1.9900000095367432,
+      "quantity": 20
+   },
+   "information": {
+      "name": "bananas",
+      "description": "yellow fruit"
+   }
+}
+```
+
+![inso.gif](images%2Finso.gif)
+
+> **Note**: Feel free to experiment with other methods of Inventory service on your own.
+
+Now let's test gRPC client using cli app we developed earlier.
 Then in another terminal in the work directory, let's compile the CLI and make
 a copy:
 
@@ -1078,7 +1137,7 @@ test gRPC services written in [Rust][rust] with the [Tonic][tonic] framework.
 [tonic]:https://github.com/hyperium/tonic
 
 
-## Next Steps
+# Next Steps
 
 I hope you enjoyed this demo. If you're interested in doing more with it
 the code provided here was a light touch for the purposes of demonstration
