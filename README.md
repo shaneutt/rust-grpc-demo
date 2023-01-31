@@ -90,12 +90,16 @@ this will be needed to generate our server and client code.
 > check out the [getting help][tonic-help] documentation and reach out to the
 > community.
 
+Download and install Insomnia from [official-website][insomnia].
+Insomnia is an open source API testing tool, and it supports testing REST, gRPC and GraphQL services.
+
 [arch]:https://archlinux.org/
 [tonic]:https://github.com/hyperium/tonic
 [tonic-help]:https://github.com/hyperium/tonic#getting-help
 [rust-install]:https://www.rust-lang.org/tools/install
 [rust-learn]:https://www.rust-lang.org/learn
 [protoc-install]:https://grpc.io/docs/protoc-installation/
+[insomnia]: https://insomnia.rest
 
 ## Step 1: Scaffolding
 
@@ -713,18 +717,63 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 In the next steps we'll move on to client code so that we can see our server
 in action.
 
-[insomnia]: https://insomnia.rest
 [grpc-reflect]: https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
 [rust-async]:https://rust-lang.github.io/async-book/
 [tokio]:https://tokio.rs
 [tokio-tut]:https://tokio.rs/tokio/tutorial
 [rust-futures]:https://github.com/rust-lang/futures-rs
 
+### Step 4.5: Testing gRPC server with Insomnia
+
+We're going to run our server in the background, and then try a variety of
+cli commands against it.
+
+Start by creating a new separate terminal which we'll dedicate to the server
+and run:
+
+```console
+$ cargo run --release --bin server
+```
+
+At first, we are going to test our server using [Insomnia][insomnia].
+
+After you downloaded and installed Insomnia, open it and click ⨁ icon and select «gRPC Request».
+
+![grpc_request.png](images%2Fgrpc_request.png)
+
+Enter `localhost:9001` in gRPC server bar.
+In gRPC method dropdown, select _Click to use server reflection_.
+
+![server_reflection.png](images%2Fserver_reflection.png)
+
+Select Unary method `/Inventory/Add` and add body of json request.
+
+```json
+{
+   "identifier": {
+      "sku": "TESTSKU"
+   },
+   "stock": {
+      "price": 1.9900000095367432,
+      "quantity": 20
+   },
+   "information": {
+      "name": "bananas",
+      "description": "yellow fruit"
+   }
+}
+```
+
+![inso.gif](images%2Finso.gif)
+
+> **Note**: Feel free to experiment with other methods of Inventory service on your own.
+
+
 ## Step 5: Implementing The Client
 
-The server is up and running, now we need to be able to use the generated API
-client to view and manage our inventory. For this we will make a command-line
-tool which can be used to manage the inventory using the gRPC API.
+The server should be is up and running (if not, start it with `cargo run --release --bin server`), 
+now we need to be able to use the generated API client to view and manage our inventory. 
+For this we will make a command-line tool which can be used to manage the inventory using the gRPC API.
 
 We'll use [Clap][rust-clap], which is a popular command-line toolkit for Rust
 and create our CLI. Create the file `src/cli.rs` and add the required imports:
@@ -988,49 +1037,6 @@ Now we're ready to test everything out!
 
 Everything's in place, and now it's time to see our work in action!
 
-We're going to run our server in the background, and then try a variety of
-cli commands against it.
-
-Start by creating a new separate terminal which we'll dedicate to the server
-and run:
-
-```console
-$ cargo run --release --bin server
-```
-
-At first, we are going to test our server using [Insomnia][insomnia].
-Insomnia is an open source API testing tool, and it supports testing gRPC services.
-After you downloaded and installed Insomnia, open it and click ⨁ icon and select «gRPC Request».
-
-![grpc_request.png](images%2Fgrpc_request.png)
-
-Enter `localhost:9001` in gRPC server bar. 
-In gRPC method dropdown, select _Click to use server reflection_.
-
-![server_reflection.png](images%2Fserver_reflection.png)
-
-Select Unary method `/Inventory/Add` and add body of json request. 
-
-```json
-{
-   "identifier": {
-      "sku": "TESTSKU"
-   },
-   "stock": {
-      "price": 1.9900000095367432,
-      "quantity": 20
-   },
-   "information": {
-      "name": "bananas",
-      "description": "yellow fruit"
-   }
-}
-```
-
-![inso.gif](images%2Finso.gif)
-
-> **Note**: Feel free to experiment with other methods of Inventory service on your own.
-
 Now let's test gRPC client using cli app we developed earlier.
 Then in another terminal in the work directory, let's compile the CLI and make
 a copy:
@@ -1049,7 +1055,7 @@ $ ./cli add --sku TESTSKU --price 1.99 --quantity 20 --name bananas --descriptio
 success: item was added to the inventory.
 ```
 
-Retrieve the item to see it's contents:
+Retrieve the item to see its contents:
 
 ```console
 $ ./cli get --sku TESTSKU
@@ -1064,7 +1070,7 @@ $ ./cli add --sku TESTSKU --price 2.99
 Error: Status { code: AlreadyExists, message: "item already exists in inventory" }
 ```
 
-Then we can change the quantity, as if some of the inventory had been purchased:
+Then we can change the quantity, as if some inventory had been purchased:
 
 ```console
 $ ./cli update-quantity --sku TESTSKU --change -17
@@ -1110,7 +1116,7 @@ stream closed
 ```
 
 We've accomplished what we set out to do, we have an API with a streaming
-endpoint, and a CLI which excercises it. If you want to play around with it
+endpoint, and a CLI which exercises it. If you want to play around with it
 more, Clap automatically generates `--help` information:
 
 ```console
