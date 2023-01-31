@@ -999,7 +999,7 @@ $ cargo run --release --bin server
 ```
 
 At first, we are going to test our server using [Insomnia][insomnia].
-Insomnia is a free API testing tool, and it supports testing gRPC services.
+Insomnia is an open source API testing tool, and it supports testing gRPC services.
 After you downloaded and installed Insomnia, open it and click ⨁ icon and select «gRPC Request».
 
 ![grpc_request.png](images%2Fgrpc_request.png)
