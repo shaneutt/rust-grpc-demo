@@ -1162,7 +1162,7 @@ And certainly many more tasks. Or you can start your own project with what you
 learned here, either way happy coding!
 
 [repo]:https://github.com/shaneutt/rust-grpc-demo
-[auth]:https://grpc.io/docs/guides/auth/
+[grpc-auth]:https://grpc.io/docs/guides/auth/
 
 # License
 
