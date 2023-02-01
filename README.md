@@ -3,9 +3,15 @@
 This is an example of creating [gRPC][grpc] services in [Rust][rust] using the
 [Tonic][tonic] framework.
 
+This is the repository for the blog post [Building gRPC APIs with Rust][blog]
+at [Kong][kong].
+
+
 [grpc]:https://grpc.io
 [rust]:https://www.rust-lang.org/
 [tonic]:https://github.com/hyperium/tonic
+[blog]:https://konghq.com/blog/building-grpc-apis-with-rust
+[kong]:https://konghq.com
 
 ## Background
 
